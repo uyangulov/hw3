@@ -108,82 +108,81 @@ def apply_ryz(arg, psi, i, j):
 
 
 def apply_rx_chain(psi, omegas, dt):
+    count = 0
     for i, omega in enumerate(omegas):
         psi = apply_rx(-dt * omega, psi, i)
-    return psi
+        count += 1
+    return psi, count
 
 
 def apply_rzz_chain(psi, gammas, dt):
+    count = 0
     for i in range(1, len(gammas)):
         for j in range(i):
             psi = apply_rzz(-dt * gammas[i][j], psi, i, j)
-    return psi
+            count += 1
+    return psi, count
 
 
 def apply_ryz_chain(psi, gammas, omegas, dt):
+    count = 0
     for i in range(len(gammas)):
         for j in range(len(gammas)):
             if i != j:
                 psi = apply_ryz(omegas[i] * gammas[i][j] * dt ** 2, psi, i, j)
-    return psi
+                count += 1
+    return psi, count
 
 
 def method1(psi, p, omegas, gammas, dt):
+    exp_count = 0
     for _ in range(p):
-        psi = apply_rx_chain(psi, omegas, dt)
-        psi = apply_rzz_chain(psi, gammas, dt)
-
-    n = omegas.shape[0]
-    # number of matrix exponentials
-    # rx + rzz
-    n_expm = n + n * (n-1) / 2
-    n_expm *= p
-    return psi, n_expm
+        psi, count = apply_rx_chain(psi, omegas, dt)
+        exp_count += count
+        psi, count = apply_rzz_chain(psi, gammas, dt)
+        exp_count += count
+    return psi, exp_count
 
 
 def method2(psi, p, omegas, gammas, dt):
+    exp_count = 0
     for _ in range(p):
-        psi = apply_rx_chain(psi, omegas, dt)
-        psi = apply_rzz_chain(psi, gammas, dt)
-        psi = apply_ryz_chain(psi, gammas, omegas, dt)
-
-    n = omegas.shape[0]
-    # number of matrix exponentials
-    # rx + rzz + ryz
-    n_expm = n + n * (n-1) / 2 + n * (n-1)
-    n_expm *= p
-    return psi, n_expm
+        psi, count = apply_rx_chain(psi, omegas, dt)
+        exp_count += count
+        psi, count = apply_rzz_chain(psi, gammas, dt)
+        exp_count += count
+        psi, count = apply_ryz_chain(psi, gammas, omegas, dt)
+        exp_count += count
+    return psi, exp_count
 
 
 def method3(psi, p, omegas, gammas, dt):
+    exp_count = 0
     for _ in range(p):
-        psi = apply_rx_chain(psi, omegas, dt/2)
-        psi = apply_rzz_chain(psi, gammas, dt)
-        psi = apply_rx_chain(psi, omegas, dt/2)
+        psi, count = apply_rx_chain(psi, omegas, dt/2)
+        exp_count += count
+        psi, count = apply_rzz_chain(psi, gammas, dt)
+        exp_count += count
+        psi, count = apply_rx_chain(psi, omegas, dt/2)
+        exp_count += count
 
-    n = omegas.shape[0]
-    # number of matrix exponentials
-    # rx + rzz + rx
-    n_expm = 2 * n + n * (n-1) / 2
-    n_expm *= p
-    return psi, n_expm
+    return psi, exp_count
 
 
 def method4(psi, p, omegas, gammas, dt):
     beta = 1 / (4 - 4**(1/3))
-    n_expm = 0
-
+    exp_count = 0
     for _ in range(p):
 
         for i in range(2):
             psi, n = method3(psi, 1, omegas, gammas, dt * beta)
-            n_expm += n
+            exp_count += n
 
         psi, n = method3(psi, 1, omegas, gammas, dt * (1-4*beta))
-        n_expm += n
+        exp_count += n
 
         for i in range(2):
             psi, n = method3(psi, 1, omegas, gammas, dt * beta)
-            n_expm += n
+            exp_count += n
 
-    return psi, n_expm
+    return psi, exp_count
