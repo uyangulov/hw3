@@ -2,10 +2,10 @@ import numpy as np
 from scipy.sparse.linalg import expm_multiply
 from functools import reduce
 
-I2 = np.eye(2, dtype= complex)
-X = np.array([[0, 1], [1, 0]], dtype = complex)
-Y = np.array([[0, -1j], [1j, 0]], dtype = complex)
-Z = np.array([[1, 0], [0, -1]], dtype = complex)
+I2 = np.eye(2, dtype=complex)
+X = np.array([[0, 1], [1, 0]], dtype=complex)
+Y = np.array([[0, -1j], [1j, 0]], dtype=complex)
+Z = np.array([[1, 0], [0, -1]], dtype=complex)
 
 shape_2q_gate = (2, 2, 2, 2)
 ZZ = np.kron(Z, Z)
@@ -54,11 +54,11 @@ def exact_evolution(psi, omegas, gammas, T):
 
 def simple_expm(M, arg):
     """
-    Computes the matrix exponential of M, given that M satisfies M**2 = I.
+    Computes the matrix exponential of 1j*arg*M, given that M satisfies M**2 = I.
     """
     I = np.eye(M.shape[0])
     return np.cos(arg) * I + 1j * np.sin(arg) * M
-    
+
 
 def apply_1q(psi, gate, i):
     """
@@ -75,7 +75,8 @@ def apply_2q(psi, gate, i, j):
     Applies a two-qubit gate to the quantum state.
     Initial state vector must have shape (2, 2, 2, ..., 2) for n qubits.
     """
-    psi = np.tensordot(gate.reshape(shape_2q_gate), psi, axes=[[-2, -1], [i, j]])
+    psi = np.tensordot(gate.reshape(shape_2q_gate),
+                       psi, axes=[[-2, -1], [i, j]])
     psi = np.moveaxis(psi, [0, 1], [i, j])
     return psi
 
@@ -123,7 +124,7 @@ def apply_ryz_chain(psi, gammas, omegas, dt):
     for i in range(len(gammas)):
         for j in range(len(gammas)):
             if i != j:
-                psi = apply_ryz(-omegas[i] * gammas[i][j] * dt ** 2, psi, i, j)
+                psi = apply_ryz(omegas[i] * gammas[i][j] * dt ** 2, psi, i, j)
     return psi
 
 
@@ -133,7 +134,8 @@ def method1(psi, p, omegas, gammas, dt):
         psi = apply_rzz_chain(psi, gammas, dt)
 
     n = omegas.shape[0]
-    # number of matrix exponents
+    # number of matrix exponentials
+    # rx + rzz
     n_expm = n + n * (n-1) / 2
     n_expm *= p
     return psi, n_expm
@@ -146,7 +148,9 @@ def method2(psi, p, omegas, gammas, dt):
         psi = apply_ryz_chain(psi, gammas, omegas, dt)
 
     n = omegas.shape[0]
-    n_expm = n + n * (n-1)
+    # number of matrix exponentials
+    # rx + rzz + ryz
+    n_expm = n + n * (n-1) / 2 + n * (n-1)
     n_expm *= p
     return psi, n_expm
 
@@ -158,6 +162,8 @@ def method3(psi, p, omegas, gammas, dt):
         psi = apply_rx_chain(psi, omegas, dt/2)
 
     n = omegas.shape[0]
+    # number of matrix exponentials
+    # rx + rzz + rx
     n_expm = 2 * n + n * (n-1) / 2
     n_expm *= p
     return psi, n_expm
@@ -166,7 +172,7 @@ def method3(psi, p, omegas, gammas, dt):
 def method4(psi, p, omegas, gammas, dt):
     beta = 1 / (4 - 4**(1/3))
     n_expm = 0
-    
+
     for _ in range(p):
 
         for i in range(2):
@@ -179,5 +185,5 @@ def method4(psi, p, omegas, gammas, dt):
         for i in range(2):
             psi, n = method3(psi, 1, omegas, gammas, dt * beta)
             n_expm += n
-    
+
     return psi, n_expm

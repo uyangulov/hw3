@@ -22,7 +22,7 @@ def hamilt_params(n):
 
 n = 3
 T = 10
-p_values = np.logspace(0,5,10,base=10, dtype=int)
+p_values = np.logspace(0,4,10,base=10, dtype=int)
 state = psi_init(n)
 omegas, gammas = hamilt_params(n)
 
