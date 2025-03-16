@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.linalg import expm
+from scipy.sparse.linalg import expm_multiply
 from functools import reduce
 
 I2 = np.eye(2, dtype= complex)
@@ -49,8 +49,7 @@ def exact_evolution(psi, omegas, gammas, T):
     Initial state vector must have shape (2, 2, 2, ..., 2) for n qubits.
     """
     H = hamiltonian_full_matrix(omegas, gammas)
-    U = expm(-1j * T * H)
-    return U @ psi.flatten()
+    return expm_multiply(-1j*T*H, psi.flatten())
 
 
 def simple_expm(M, arg):
