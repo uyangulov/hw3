@@ -22,7 +22,7 @@ def hamilt_params(n):
 
 n = 3
 T = 10
-p_values = np.arange(1, 20, 1, dtype=int)
+p_values = np.logspace(0,5,10,base=10, dtype=int)
 state = psi_init(n)
 omegas, gammas = hamilt_params(n)
 
@@ -41,7 +41,7 @@ for p in p_values:
         fidelities[label].append(fidelity(psi_ref, psi_trotter))
         n_expm_values[label].append(n_expm)
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+fig, (ax1, ax2) = plt.subplots(figsize=(14, 6), nrows=1, ncols=2)
 
 for label in method_labels:
     ax1.plot(n_expm_values[label], fidelities[label], marker='o', label=label)
@@ -50,16 +50,19 @@ ax1.set_ylim(0, 1.1)
 ax1.set_xlabel("Number of Matrix Exponentials")
 ax1.set_ylabel("Fidelity with Exact Evolution")
 ax1.legend()
-ax1.set_title("Fidelity vs. Number of Matrix Exponentials for Trotter Methods")
+ax1.set_xscale("log")
+ax1.set_title("Fidelity (linear scale)")
 ax1.grid(ls=':')
 
 for label in method_labels:
-    ax2.plot(n_expm_values[label], np.log10(1 - np.array(fidelities[label])), marker='o', label=label)
+    ax2.plot(n_expm_values[label], 1 - np.array(fidelities[label]), marker='o', label=label)
 
 ax2.set_xlabel("Number of Matrix Exponentials")
-ax2.set_ylabel("log10(1 - Fidelity)")
+ax2.set_ylabel("1 - Fidelity")
 ax2.legend()
-ax2.set_title("log10(1 - Fidelity) vs. Number of Matrix Exponentials")
+ax2.set_xscale("log")
+ax2.set_yscale("log")
+ax2.set_title("1 - Fidelity (log10 scale)")
 ax2.grid(ls=':')
 
 # Display the plots
